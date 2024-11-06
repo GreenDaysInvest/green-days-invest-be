@@ -1,12 +1,13 @@
 // src/user/user.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Questionnaire } from '../questionnaire/questionnaire.entity';
 
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true }) // uid is required and unique
+  @Column({ unique: true })
   uid: string;
 
   @Column()
@@ -26,4 +27,17 @@ export class User {
 
   @Column({ nullable: true })
   providerId: string;
+
+  @Column({ nullable: true })
+  street: string;
+
+  @Column({ nullable: true })
+  country: string;
+
+  @Column({ nullable: true })
+  zip: string;
+
+  // Adding the one-to-many relationship
+  @OneToMany(() => Questionnaire, (questionnaire) => questionnaire.user)
+  questionnaires: Questionnaire[];
 }

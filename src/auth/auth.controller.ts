@@ -1,6 +1,8 @@
-// src/auth/auth.controller.ts
-import { Controller, Post, Body, ConflictException } from '@nestjs/common';
+import { Controller, Post, Body, Put, UseGuards, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { User } from '../user/user.entity'; // Ensure this import is correct
+import { User as UserDecorator } from '../user/user.decorator'; // If you're using a custom decorator for extracting user info
 
 @Controller('auth')
 export class AuthController {
@@ -8,19 +10,19 @@ export class AuthController {
 
   @Post('register')
   async register(
-    @Body('name') name: string,
-    @Body('surname') surname: string,
-    @Body('email') email: string,
-    @Body('phoneNumber') phoneNumber: string,
-    @Body('password') password?: string,
+    @Body()
+    userData: {
+      uid: string;
+      name: string;
+      surname: string;
+      email: string;
+      phoneNumber: string;
+      password: string;
+    },
   ) {
-    const userExists = await this.authService.checkUserExists(email);
-
-    if (userExists) {
-      throw new ConflictException('User already registered. Please log in.');
-    }
-
+    const { uid, name, surname, email, phoneNumber, password } = userData;
     return this.authService.register(
+      uid,
       name,
       surname,
       email,
@@ -35,5 +37,27 @@ export class AuthController {
     @Body('password') password: string,
   ) {
     return this.authService.login(email, password);
+  }
+
+  @Put('profile')
+  @UseGuards(JwtAuthGuard)
+  async updateProfile(
+    @Body() userData: Partial<Omit<User, 'uid' | 'providerId' | 'email'>>, // Exclude fields that should not be updated
+    @UserDecorator('userId') user: { userId: string }, // Make sure this decorator extracts the user ID correctly
+  ) {
+    return this.authService.updateUser(user, userData);
+  }
+
+  @Get('profile')
+  @UseGuards(JwtAuthGuard) // Protect this route with the JWT guard
+  async getProfile(
+    @UserDecorator('userId') user: { userId: string },
+  ): Promise<User> {
+    return this.authService.getUserProfile(user); // Call a service method to get user profile
+  }
+
+  @Post('login/firebase')
+  async loginWithFirebase(@Body('token') token: string) {
+    return this.authService.loginWithFirebase(token); // Pass the token to the service
   }
 }
