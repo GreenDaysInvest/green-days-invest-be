@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UserService } from '../user/user.service';
 import { User } from '../user/user.entity';
-import * as admin from 'firebase-admin';
+import admin from 'firebase-admin';
 
 @Injectable()
 export class AuthService {
