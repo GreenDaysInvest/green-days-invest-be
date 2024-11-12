@@ -25,29 +25,56 @@ export class AuthService {
     surname: string,
     email: string,
     phoneNumber: string,
-    password: string, // Make sure this is hashed
+    password: string,
     isAdmin?: boolean,
-  ): Promise<User> {
-    const hashedPassword = await bcrypt.hash(password, 10); // Hash the password
-    console.log('JWT_SECRET:', process.env.JWT_SECRET);
-    return this.userService.createUser({
+  ): Promise<{ token: string; user: Partial<User> }> {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await this.userService.createUser({
       uid,
       name,
       surname,
       email,
       phoneNumber,
-      password: hashedPassword, // Save the hashed password
+      password: hashedPassword,
       isAdmin,
     });
+
+    const token = this.jwtService.sign({ userId: user.id });
+
+    // Return only non-sensitive user data and the token
+    return {
+      token,
+      user: {
+        uid: user.uid,
+        name: user.name,
+        surname: user.surname,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      },
+    };
   }
 
-  async login(email: string, password: string): Promise<string> {
-    console.log('JWT_SECRET:', process.env.JWT_SECRET);
+  async login(
+    email: string,
+    password: string,
+  ): Promise<{ token: string; user: Partial<User> }> {
     const user = await this.userService.findByEmail(email);
     if (user && user.password) {
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (isPasswordValid) {
-        return this.jwtService.sign({ userId: user.id });
+        const token = this.jwtService.sign({ userId: user.id });
+
+        // Return only non-sensitive user data and the token
+        return {
+          token,
+          user: {
+            uid: user.uid,
+            name: user.name,
+            surname: user.surname,
+            email: user.email,
+            isAdmin: user.isAdmin,
+          },
+        };
       }
     }
     throw new UnauthorizedException('Invalid credentials');
@@ -94,17 +121,31 @@ export class AuthService {
     return this.jwtService.sign({ userId: user.id }); // Sign and return the token
   }
 
-  async getUserProfile(_user: { userId: string }): Promise<User> {
-    // Ensure userId is a string and formatted correctly
+  async getUserProfile(_user: { userId: string }): Promise<Partial<User>> {
     const id = _user.userId;
     if (typeof id !== 'string') {
       throw new Error('Invalid user ID format');
     }
+
     const user = await this.userService.findById(id);
     if (!user) {
-      throw new Error('User not found'); // Handle case when user does not exist
+      throw new Error('User not found');
     }
-    return user; // Return the user object
+
+    // Return only non-sensitive user data
+    return {
+      id: user.id,
+      uid: user.uid,
+      name: user.name,
+      surname: user.surname,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      providerId: user.providerId,
+      street: user.street,
+      country: user.country,
+      zip: user.zip,
+      isAdmin: user.isAdmin,
+    };
   }
 
   async updateUser(

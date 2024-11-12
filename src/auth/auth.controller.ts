@@ -55,7 +55,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard) // Protect this route with the JWT guard
   async getProfile(
     @UserDecorator('userId') user: { userId: string },
-  ): Promise<User> {
+  ): Promise<Partial<User>> {
     return this.authService.getUserProfile(user); // Call a service method to get user profile
   }
 
