@@ -25,7 +25,7 @@ export class AuthService {
     surname: string,
     email: string,
     phoneNumber: string,
-    password: string,
+    password?: string,
     isAdmin?: boolean,
   ): Promise<{ token: string; user: Partial<User> }> {
     const hashedPassword = await bcrypt.hash(password, 10);
