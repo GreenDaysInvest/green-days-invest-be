@@ -1,7 +1,7 @@
 // src/auth/auth.service.ts
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { UserService } from '../user/user.service';
 import { User } from '../user/user.entity';
 import admin from 'firebase-admin';
@@ -26,6 +26,7 @@ export class AuthService {
     email: string,
     phoneNumber: string,
     password: string, // Make sure this is hashed
+    isAdmin?: boolean,
   ): Promise<User> {
     const hashedPassword = await bcrypt.hash(password, 10); // Hash the password
     console.log('JWT_SECRET:', process.env.JWT_SECRET);
@@ -36,6 +37,7 @@ export class AuthService {
       email,
       phoneNumber,
       password: hashedPassword, // Save the hashed password
+      isAdmin,
     });
   }
 

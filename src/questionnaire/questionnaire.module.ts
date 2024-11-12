@@ -3,8 +3,8 @@ import { QuestionnaireService } from './questionnaire.service';
 import { QuestionnaireController } from './questionnaire.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Questionnaire } from './questionnaire.entity';
-import { AuthModule } from 'src/auth/auth.module';
-import { UserModule } from 'src/user/user.module';
+import { AuthModule } from '../auth/auth.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Questionnaire]), UserModule, AuthModule],

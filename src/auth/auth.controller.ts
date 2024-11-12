@@ -18,9 +18,11 @@ export class AuthController {
       email: string;
       phoneNumber: string;
       password: string;
+      isAdmin?: boolean;
     },
   ) {
-    const { uid, name, surname, email, phoneNumber, password } = userData;
+    const { uid, name, surname, email, phoneNumber, password, isAdmin } =
+      userData;
     return this.authService.register(
       uid,
       name,
@@ -28,6 +30,7 @@ export class AuthController {
       email,
       phoneNumber,
       password,
+      isAdmin,
     );
   }
 

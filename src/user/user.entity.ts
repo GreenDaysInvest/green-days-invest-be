@@ -37,6 +37,9 @@ export class User {
   @Column({ nullable: true })
   zip: string;
 
+  @Column({ default: false })
+  isAdmin: boolean;
+
   // Adding the one-to-many relationship
   @OneToMany(() => Questionnaire, (questionnaire) => questionnaire.user)
   questionnaires: Questionnaire[];
