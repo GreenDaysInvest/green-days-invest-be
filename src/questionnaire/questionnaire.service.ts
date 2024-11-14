@@ -1,7 +1,6 @@
-// src/questionnaire/questionnaire.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { Questionnaire } from './questionnaire.entity';
 
 @Injectable()
@@ -25,10 +24,22 @@ export class QuestionnaireService {
   }
 
   async findAll(): Promise<Questionnaire[]> {
-    return this.questionnaireRepository.find({ relations: ['user'] }); // Include user information if needed
+    return this.questionnaireRepository.find({ relations: ['user'] });
   }
 
-  // Add a method to update a questionnaire if required
+  async searchByUserDetails(query: string): Promise<Questionnaire[]> {
+    const lowerCaseQuery = query.toLocaleLowerCase();
+
+    return this.questionnaireRepository.find({
+      where: [
+        { user: { name: Like(`%${lowerCaseQuery}%`) } },
+        { user: { surname: Like(`%${lowerCaseQuery}%`) } },
+        { user: { email: Like(`%${lowerCaseQuery}%`) } },
+      ],
+      relations: ['user'],
+    });
+  }
+
   async updateQuestionnaire(
     id: string,
     data: Partial<Questionnaire>,

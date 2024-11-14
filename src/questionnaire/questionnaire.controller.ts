@@ -1,5 +1,13 @@
 // src/questionnaire/questionnaire.controller.ts
-import { Controller, Post, Body, UseGuards, Get, Param } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Get,
+  Param,
+  Query,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { QuestionnaireService } from './questionnaire.service';
 import { User as UserDecorator } from '../user/user.decorator';
@@ -46,5 +54,11 @@ export class QuestionnaireController {
   @UseGuards(JwtAuthGuard) // Protect this route with the JWT guard
   async getQuestionnairesByUserId(@Param('id') userId: string) {
     return this.questionnaireService.findByUserId(userId); // Call service to get questionnaires for the user
+  }
+
+  @Get('search')
+  @UseGuards(JwtAuthGuard)
+  async searchQuestionnaires(@Query('query') query: string) {
+    return this.questionnaireService.searchByUserDetails(query);
   }
 }
