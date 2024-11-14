@@ -9,7 +9,6 @@ import * as bcrypt from 'bcryptjs';
 import { UserService } from '../user/user.service';
 import { User } from '../user/user.entity';
 import admin from '../firebase-admin';
-import { throwError } from 'rxjs';
 
 @Injectable()
 export class AuthService {
