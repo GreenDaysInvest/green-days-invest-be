@@ -13,7 +13,7 @@ export class User {
   @Column()
   name: string;
 
-  @Column()
+  @Column({ nullable: true })
   surname: string;
 
   @Column({ unique: true })

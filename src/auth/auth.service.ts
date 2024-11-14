@@ -1,10 +1,15 @@
 // src/auth/auth.service.ts
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { UserService } from '../user/user.service';
 import { User } from '../user/user.entity';
-import admin from 'firebase-admin';
+import admin from '../firebase-admin';
+import { throwError } from 'rxjs';
 
 @Injectable()
 export class AuthService {
@@ -28,7 +33,13 @@ export class AuthService {
     password?: string,
     isAdmin?: boolean,
   ): Promise<{ token: string; user: Partial<User> }> {
-    const hashedPassword = await bcrypt.hash(password, 10);
+    if (await this.userService.findByEmail(email)) {
+      throw new ConflictException('User with this email already exists');
+    }
+    const hashedPassword = password
+      ? await bcrypt.hash(password, 10)
+      : undefined;
+
     const user = await this.userService.createUser({
       uid,
       name,
@@ -73,6 +84,7 @@ export class AuthService {
             surname: user.surname,
             email: user.email,
             isAdmin: user.isAdmin,
+            questionnaires: user.questionnaires,
           },
         };
       }
@@ -96,29 +108,32 @@ export class AuthService {
     return user;
   }
 
-  ///= mos e harro mi kqyr kta
-  async loginWithFirebase(token: string): Promise<string> {
+  async loginWithFirebase(
+    token: string,
+  ): Promise<{ token: string; user: Partial<User> }> {
     const decodedToken = await admin.auth().verifyIdToken(token); // Verify the token
     const email = decodedToken.email;
-    const uid = decodedToken.uid;
-    const name = decodedToken.name || decodedToken.given_name; // Fallback to given_name if name is not available
-    const surname = decodedToken.family_name; // Assuming family_name is used for surname
 
     // Check if user already exists
-    let user = await this.userService.findByEmail(email);
+    const user = await this.userService.findByEmail(email);
     if (!user) {
-      // If user does not exist, create a new user
-      user = await this.userService.createUser({
-        uid,
-        email,
-        name,
-        surname,
-        providerId: 'firebase', // Indicate that this user is from Firebase
-      });
+      throw new UnauthorizedException(
+        'User not registered. Please register first.',
+      );
     }
-
+    const _token = this.jwtService.sign({ userId: user.id });
     // Return JWT token
-    return this.jwtService.sign({ userId: user.id }); // Sign and return the token
+    return {
+      token: _token,
+      user: {
+        uid: user.uid,
+        name: user.name,
+        surname: user.surname,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        questionnaires: user.questionnaires,
+      },
+    };
   }
 
   async getUserProfile(_user: { userId: string }): Promise<Partial<User>> {
@@ -131,7 +146,6 @@ export class AuthService {
     if (!user) {
       throw new Error('User not found');
     }
-
     // Return only non-sensitive user data
     return {
       id: user.id,

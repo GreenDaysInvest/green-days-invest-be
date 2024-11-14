@@ -1,4 +1,6 @@
-import admin from 'firebase-admin';
+// src/firebase-admin.ts
+import 'dotenv/config';
+import * as admin from 'firebase-admin';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -12,11 +14,13 @@ if (serviceAccountPath && fs.existsSync(serviceAccountPath)) {
       fs.readFileSync(serviceAccountPath, 'utf8'),
     );
 
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
-
-    console.log('Firebase Admin initialized successfully.');
+    // Check if Firebase Admin has already been initialized
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+      console.log('Firebase Admin initialized successfully.');
+    }
   } catch (error) {
     console.error('Failed to initialize Firebase Admin:', error);
   }
