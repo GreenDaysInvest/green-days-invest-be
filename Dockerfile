@@ -1,8 +1,8 @@
 # Use the Node.js alpine image
 FROM node:16-alpine
 
-# Install dependencies for bcrypt and other native modules
-RUN apk add --no-cache python3 make g++ 
+# Install Python, pip, and build tools for native modules and Python scripts
+RUN apk add --no-cache python3 py3-pip make g++ 
 
 # Set the working directory
 WORKDIR /app
@@ -10,11 +10,15 @@ WORKDIR /app
 # Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Install dependencies
+# Install Node.js dependencies
 RUN npm install
 
 # Rebuild bcrypt to ensure compatibility with the alpine environment
 RUN npm rebuild bcrypt --build-from-source
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code
 COPY . .
