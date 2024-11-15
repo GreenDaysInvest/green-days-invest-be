@@ -21,7 +21,10 @@ export class UserService {
   }
 
   async findById(id: string): Promise<User | undefined> {
-    return this.userRepository.findOne({ where: { id } });
+    return this.userRepository.findOne({
+      where: { id },
+      relations: ['questionnaires'],
+    });
   }
 
   async updateUser(id: string, userData: Partial<User>): Promise<User> {

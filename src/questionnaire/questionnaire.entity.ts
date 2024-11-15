@@ -1,6 +1,7 @@
-// src/questionnaire/questionnaire.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { User } from '../user/user.entity';
+
+export type QuestionnaireStatus = 'pending' | 'accepted' | 'declined';
 
 @Entity('questionnaires')
 export class Questionnaire {
@@ -13,7 +14,6 @@ export class Questionnaire {
   @Column('json')
   questions: { question: string; answer: string }[];
 
-  // Additional fields if necessary
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
@@ -23,4 +23,11 @@ export class Questionnaire {
     onUpdate: 'CURRENT_TIMESTAMP',
   })
   updatedAt: Date;
+
+  @Column({
+    type: 'enum',
+    enum: ['pending', 'accepted', 'declined'],
+    default: 'pending',
+  })
+  status: QuestionnaireStatus;
 }

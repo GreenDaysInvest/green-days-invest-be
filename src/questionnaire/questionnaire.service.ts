@@ -17,6 +17,14 @@ export class QuestionnaireService {
     return this.questionnaireRepository.save(questionnaire);
   }
 
+  async updateStatus(
+    id: string,
+    status: 'accepted' | 'declined',
+  ): Promise<Questionnaire> {
+    await this.questionnaireRepository.update(id, { status });
+    return this.questionnaireRepository.findOne({ where: { id } });
+  }
+
   async findByUserId(userId: string): Promise<Questionnaire[]> {
     return this.questionnaireRepository.find({
       where: { user: { id: userId } },

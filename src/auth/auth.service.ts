@@ -72,7 +72,10 @@ export class AuthService {
     if (user && user.password) {
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (isPasswordValid) {
-        const token = this.jwtService.sign({ userId: user.id });
+        const token = this.jwtService.sign({
+          userId: user.id,
+          isAdmin: user.isAdmin,
+        });
 
         // Return only non-sensitive user data and the token
         return {
@@ -158,6 +161,7 @@ export class AuthService {
       country: user.country,
       zip: user.zip,
       isAdmin: user.isAdmin,
+      questionnaires: user.questionnaires,
     };
   }
 

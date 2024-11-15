@@ -7,7 +7,9 @@ import {
   Get,
   Param,
   Query,
+  Patch,
 } from '@nestjs/common';
+import { AdminAuthGuard } from '../auth/admin-auth.guard';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { QuestionnaireService } from './questionnaire.service';
 import { User as UserDecorator } from '../user/user.decorator';
@@ -45,20 +47,32 @@ export class QuestionnaireController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard) // Optional: restrict to authenticated users
+  @UseGuards(JwtAuthGuard)
   async getAllQuestionnaires() {
     return this.questionnaireService.findAll();
   }
 
-  @Get('user/:id') // New endpoint to get questionnaires by user ID
-  @UseGuards(JwtAuthGuard) // Protect this route with the JWT guard
+  @Get('user/:id')
+  @UseGuards(JwtAuthGuard)
   async getQuestionnairesByUserId(@Param('id') userId: string) {
-    return this.questionnaireService.findByUserId(userId); // Call service to get questionnaires for the user
+    return this.questionnaireService.findByUserId(userId);
   }
 
   @Get('search')
   @UseGuards(JwtAuthGuard)
   async searchQuestionnaires(@Query('query') query: string) {
     return this.questionnaireService.searchByUserDetails(query);
+  }
+
+  @Patch(':id/accept')
+  @UseGuards(JwtAuthGuard, AdminAuthGuard)
+  async acceptQuestionnaire(@Param('id') id: string) {
+    return this.questionnaireService.updateStatus(id, 'accepted');
+  }
+
+  @Patch(':id/decline')
+  @UseGuards(JwtAuthGuard, AdminAuthGuard)
+  async declineQuestionnaire(@Param('id') id: string) {
+    return this.questionnaireService.updateStatus(id, 'declined');
   }
 }
