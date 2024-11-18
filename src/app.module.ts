@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { ScraperModule } from './scraper/scraper.module';
 import { QuestionnaireModule } from './questionnaire/questionnaire.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { QuestionnaireModule } from './questionnaire/questionnaire.module';
     UserModule,
     ScraperModule,
     QuestionnaireModule,
+    EmailModule,
   ],
 })
 export class AppModule {}

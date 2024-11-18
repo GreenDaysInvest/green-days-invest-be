@@ -2,12 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Like, Repository } from 'typeorm';
 import { Questionnaire } from './questionnaire.entity';
+import { EmailService } from 'src/email/email.service';
 
 @Injectable()
 export class QuestionnaireService {
   constructor(
     @InjectRepository(Questionnaire)
     private readonly questionnaireRepository: Repository<Questionnaire>,
+    private readonly emailService: EmailService,
   ) {}
 
   async createQuestionnaire(
@@ -21,8 +23,41 @@ export class QuestionnaireService {
     id: string,
     status: 'accepted' | 'declined',
   ): Promise<Questionnaire> {
-    await this.questionnaireRepository.update(id, { status });
-    return this.questionnaireRepository.findOne({ where: { id } });
+    const questionnaire = await this.questionnaireRepository.findOne({
+      where: { id },
+      relations: ['user'],
+    });
+
+    if (!questionnaire) {
+      throw new Error('Questionnaire not found');
+    }
+
+    questionnaire.status = status;
+    const updatedQuestionnaire = await this.questionnaireRepository.save(
+      questionnaire,
+    );
+
+    // Send email to user
+    const subject =
+      status === 'accepted'
+        ? 'Your Medication Has Been Accepted'
+        : 'Your Medication Has Been Declined';
+    const text =
+      status === 'accepted'
+        ? `Hello ${questionnaire.user.name}, your medication has been accepted.`
+        : `Hello ${questionnaire.user.name}, unfortunately, your medication has been declined.`;
+
+    try {
+      await this.emailService.sendEmail(
+        questionnaire.user.email,
+        subject,
+        text,
+      );
+    } catch (error) {
+      console.error('Failed to send email:', error);
+    }
+
+    return updatedQuestionnaire;
   }
 
   async findByUserId(userId: string): Promise<Questionnaire[]> {
@@ -46,13 +81,5 @@ export class QuestionnaireService {
       ],
       relations: ['user'],
     });
-  }
-
-  async updateQuestionnaire(
-    id: string,
-    data: Partial<Questionnaire>,
-  ): Promise<Questionnaire> {
-    await this.questionnaireRepository.update(id, data);
-    return this.questionnaireRepository.findOne({ where: { id } });
   }
 }
