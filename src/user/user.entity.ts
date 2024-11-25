@@ -40,6 +40,25 @@ export class User {
   @Column({ default: false })
   isAdmin: boolean;
 
+  @Column({
+    type: 'enum',
+    enum: ['PENDING', 'VERIFIED', 'REJECTED'],
+    default: 'PENDING',
+  })
+  verificationStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
+
+  @Column({ nullable: true })
+  verificationDocumentUrl: string; // URL of uploaded document for verification
+
+  @Column({ nullable: true, type: 'timestamp' })
+  verificationDate: Date; // Timestamp when verification status was updated
+
+  @Column({ nullable: true, unique: true })
+  stripeCustomerId: string; // Securely store Stripe Customer ID for payments
+
+  @Column({ nullable: true, unique: true })
+  stripePaymentMethodId: string; // Optional: store default payment method ID (encrypted)
+
   @OneToMany(() => Questionnaire, (questionnaire) => questionnaire.user)
   questionnaires: Questionnaire[];
 
