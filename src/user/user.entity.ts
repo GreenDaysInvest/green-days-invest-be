@@ -1,6 +1,6 @@
-// src/user/user.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { Questionnaire } from '../questionnaire/questionnaire.entity';
+import { Questionnaire } from 'src/questionnaire/questionnaire.entity';
+import { BasketItem } from 'src/basket/basket.entity';
 
 @Entity('users')
 export class User {
@@ -40,7 +40,11 @@ export class User {
   @Column({ default: false })
   isAdmin: boolean;
 
-  // Adding the one-to-many relationship
   @OneToMany(() => Questionnaire, (questionnaire) => questionnaire.user)
   questionnaires: Questionnaire[];
+
+  @OneToMany(() => BasketItem, (basketItem) => basketItem.user, {
+    cascade: true,
+  })
+  basket: BasketItem[];
 }

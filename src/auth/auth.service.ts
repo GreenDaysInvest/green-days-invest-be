@@ -141,12 +141,12 @@ export class AuthService {
   async getUserProfile(_user: { userId: string }): Promise<Partial<User>> {
     const id = _user.userId;
     if (typeof id !== 'string') {
-      throw new Error('Invalid user ID format');
+      throw new ConflictException('Invalid user ID format');
     }
 
     const user = await this.userService.findById(id);
     if (!user) {
-      throw new Error('User not found');
+      throw new ConflictException('User not found');
     }
     // Return only non-sensitive user data
     return {

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Like, Repository } from 'typeorm';
 import { Questionnaire } from './questionnaire.entity';
@@ -29,7 +29,7 @@ export class QuestionnaireService {
     });
 
     if (!questionnaire) {
-      throw new Error('Questionnaire not found');
+      throw new ConflictException('Questionnaire not found');
     }
 
     questionnaire.status = status;
