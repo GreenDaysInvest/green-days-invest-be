@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import Stripe from 'stripe';
 import { UserService } from '../user/user.service';
 
@@ -37,7 +41,7 @@ export class PaymentsService {
     if (!user) throw new NotFoundException('User not found');
 
     if (user.verificationStatus !== 'VERIFIED') {
-      throw new Error('User is not verified');
+      throw new ConflictException('User is not verified');
     }
 
     return await this.stripe.paymentIntents.create({
