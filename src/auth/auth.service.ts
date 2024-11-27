@@ -31,6 +31,7 @@ export class AuthService {
     phoneNumber: string,
     password?: string,
     isAdmin?: boolean,
+    birthdate?: string,
   ): Promise<{ token: string; user: Partial<User> }> {
     if (await this.userService.findByEmail(email)) {
       throw new ConflictException('User with this email already exists');
@@ -47,6 +48,7 @@ export class AuthService {
       phoneNumber,
       password: hashedPassword,
       isAdmin,
+      birthdate,
     });
 
     const token = this.jwtService.sign({ userId: user.id });
@@ -59,6 +61,7 @@ export class AuthService {
         name: user.name,
         surname: user.surname,
         email: user.email,
+        birthdate: user.birthdate,
         isAdmin: user.isAdmin,
       },
     };
@@ -85,6 +88,7 @@ export class AuthService {
             name: user.name,
             surname: user.surname,
             email: user.email,
+            birthdate: user.birthdate,
             isAdmin: user.isAdmin,
             questionnaires: user.questionnaires,
           },
@@ -156,12 +160,17 @@ export class AuthService {
       surname: user.surname,
       email: user.email,
       phoneNumber: user.phoneNumber,
+      birthdate: user.birthdate,
       providerId: user.providerId,
       street: user.street,
-      country: user.country,
+      city: user.city,
       zip: user.zip,
       isAdmin: user.isAdmin,
       questionnaires: user.questionnaires,
+      verificationStatus: user.verificationStatus,
+      verificationDocumentUrl: user.verificationDocumentUrl,
+      verificationDate: user.verificationDate,
+      stripeCustomerId: user.stripeCustomerId,
     };
   }
 

@@ -23,6 +23,9 @@ export class User {
   phoneNumber: string;
 
   @Column({ nullable: true })
+  birthdate: string;
+
+  @Column({ nullable: true })
   password: string;
 
   @Column({ nullable: true })
@@ -32,7 +35,7 @@ export class User {
   street: string;
 
   @Column({ nullable: true })
-  country: string;
+  city: string;
 
   @Column({ nullable: true })
   zip: string;
@@ -55,9 +58,6 @@ export class User {
 
   @Column({ nullable: true, unique: true })
   stripeCustomerId: string; // Securely store Stripe Customer ID for payments
-
-  @Column({ nullable: true, unique: true })
-  stripePaymentMethodId: string; // Optional: store default payment method ID (encrypted)
 
   @OneToMany(() => Questionnaire, (questionnaire) => questionnaire.user)
   questionnaires: Questionnaire[];

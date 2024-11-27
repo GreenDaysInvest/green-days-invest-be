@@ -29,7 +29,7 @@ export class QuestionnaireService {
     });
 
     if (!questionnaire) {
-      throw new ConflictException('Questionnaire not found');
+      throw new ConflictException('Fragebogen nicht gefunden');
     }
 
     questionnaire.status = status;
@@ -40,12 +40,12 @@ export class QuestionnaireService {
     // Send email to user
     const subject =
       status === 'accepted'
-        ? 'Your Medication Has Been Accepted'
-        : 'Your Medication Has Been Declined';
+        ? 'Ihr Medikament wurde abgelehnt'
+        : 'Ihr Medikament wurde abgelehnt';
     const text =
       status === 'accepted'
-        ? `Hello ${questionnaire.user.name}, your medication has been accepted.`
-        : `Hello ${questionnaire.user.name}, unfortunately, your medication has been declined.`;
+        ? `Halo ${questionnaire.user.name}, Ihr Medikament wurde abgelehnt.`
+        : `Halo ${questionnaire.user.name}, leider wurde, Ihr Medikament abgelehnt.`;
 
     try {
       await this.emailService.sendEmail(

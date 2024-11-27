@@ -19,10 +19,19 @@ export class AuthController {
       phoneNumber: string;
       password?: string;
       isAdmin?: boolean;
+      birthdate: string;
     },
   ) {
-    const { uid, name, surname, email, phoneNumber, password, isAdmin } =
-      userData;
+    const {
+      uid,
+      name,
+      surname,
+      email,
+      phoneNumber,
+      password,
+      isAdmin,
+      birthdate,
+    } = userData;
     return this.authService.register(
       uid,
       name,
@@ -31,6 +40,7 @@ export class AuthController {
       phoneNumber,
       password,
       isAdmin,
+      birthdate,
     );
   }
 
