@@ -22,8 +22,8 @@ export class User {
   @Column({ nullable: true })
   phoneNumber: string;
 
-  @Column({ nullable: true })
-  birthdate: string;
+  @Column({ nullable: true, type: 'date' })
+  birthdate: Date;
 
   @Column({ nullable: true })
   password: string;
@@ -43,21 +43,14 @@ export class User {
   @Column({ default: false })
   isAdmin: boolean;
 
-  @Column({
-    type: 'enum',
-    enum: ['PENDING', 'VERIFIED', 'REJECTED'],
-    default: 'PENDING',
-  })
-  verificationStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
+  @Column({ nullable: true, unique: true })
+  stripeCustomerId: string; // Securely store Stripe Customer ID for payments and for identity verification
 
-  @Column({ nullable: true })
-  verificationDocumentUrl: string; // URL of uploaded document for verification
+  @Column({ default: false })
+  isVerified: boolean; // Indicates if the user is verified by Stripe
 
   @Column({ nullable: true, type: 'timestamp' })
-  verificationDate: Date; // Timestamp when verification status was updated
-
-  @Column({ nullable: true, unique: true })
-  stripeCustomerId: string; // Securely store Stripe Customer ID for payments
+  verifiedAt: Date; // Timestamp of successful verification
 
   @OneToMany(() => Questionnaire, (questionnaire) => questionnaire.user)
   questionnaires: Questionnaire[];

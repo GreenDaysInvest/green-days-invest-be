@@ -19,7 +19,7 @@ export class AuthController {
       phoneNumber: string;
       password?: string;
       isAdmin?: boolean;
-      birthdate: string;
+      birthdate: Date;
     },
   ) {
     const {

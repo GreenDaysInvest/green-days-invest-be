@@ -125,6 +125,7 @@ export class BasketService {
     return await this.basketItemRepository.find({
       where: { user: { id: userId } },
       relations: ['flower'],
+      order: { id: 'ASC' },
     });
   }
 }
