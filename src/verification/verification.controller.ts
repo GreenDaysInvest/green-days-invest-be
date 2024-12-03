@@ -1,35 +1,45 @@
 import {
   Controller,
   Post,
-  Patch,
-  Body,
-  Param,
-  UseGuards,
+  UploadedFile,
+  UseInterceptors,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { VerificationService } from './verification.service';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { StripeWebhookService } from 'src/stripe-webhook/stripe-webhook.service';
 
 @Controller('verification')
 export class VerificationController {
-  constructor(private readonly verificationService: VerificationService) {}
+  constructor(
+    private readonly stripeService: StripeWebhookService,
+    private readonly verificationService: VerificationService,
+  ) {}
 
-  @UseGuards(JwtAuthGuard)
   @Post('upload')
-  async uploadDocument(
-    @Body() { documentUrl }: { documentUrl: string },
-    @Body('userId') userId: string,
-  ) {
-    await this.verificationService.uploadDocument(userId, documentUrl);
-    return { message: 'Document uploaded and under review' };
-  }
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadVerificationDocument(@UploadedFile() file: Express.Multer.File) {
+    try {
+      if (!file) {
+        throw new HttpException('No file uploaded', HttpStatus.BAD_REQUEST);
+      }
 
-  @UseGuards(JwtAuthGuard)
-  @Patch(':userId')
-  async updateStatus(
-    @Param('userId') userId: string,
-    @Body() { status }: { status: 'VERIFIED' | 'REJECTED' },
-  ) {
-    await this.verificationService.updateVerificationStatus(userId, status);
-    return { message: `User verification status updated to ${status}` };
+      // Upload the document to Stripe and create a verification report
+      const verificationReport =
+        await this.stripeService.uploadVerificationDocument(file);
+
+      // Return the verification report to the frontend
+      return {
+        message: 'Document uploaded and verification report created',
+        verificationReport,
+      };
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      throw new HttpException(
+        'Error uploading document',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }
