@@ -31,7 +31,7 @@ export class AuthService {
     phoneNumber: string,
     password?: string,
     isAdmin?: boolean,
-    birthdate?: string,
+    birthdate?: Date,
   ): Promise<{ token: string; user: Partial<User> }> {
     if (await this.userService.findByEmail(email)) {
       throw new ConflictException('User with this email already exists');
@@ -167,9 +167,8 @@ export class AuthService {
       zip: user.zip,
       isAdmin: user.isAdmin,
       questionnaires: user.questionnaires,
-      verificationStatus: user.verificationStatus,
-      verificationDocumentUrl: user.verificationDocumentUrl,
-      verificationDate: user.verificationDate,
+      isVerified: user.isVerified,
+      verifiedAt: user.verifiedAt,
       stripeCustomerId: user.stripeCustomerId,
     };
   }

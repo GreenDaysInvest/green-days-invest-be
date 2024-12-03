@@ -52,7 +52,7 @@ export class PaymentsService {
     const user = await this.userService.findById(userId);
     if (!user) throw new NotFoundException('User not found');
 
-    if (user.verificationStatus !== 'VERIFIED') {
+    if (!user.isVerified) {
       throw new ConflictException('User is not verified');
     }
 
