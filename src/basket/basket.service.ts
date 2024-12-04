@@ -128,4 +128,18 @@ export class BasketService {
       order: { id: 'ASC' },
     });
   }
+
+  async clearBasket(userId: string): Promise<void> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['basket'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Remove all basket items for the user
+    await this.basketItemRepository.remove(user.basket);
+  }
 }

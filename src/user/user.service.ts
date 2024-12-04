@@ -1,5 +1,5 @@
 // src/user/user.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
@@ -28,11 +28,18 @@ export class UserService {
   }
 
   async updateUser(id: string, userData: Partial<User>): Promise<User> {
+    if (!id) {
+      throw new NotFoundException('User ID is required for updating the user');
+    }
     if (userData.password) {
       // If password is provided, hash it before saving
       userData.password = await bcrypt.hash(userData.password, 10);
     }
-    await this.userRepository.update(id, userData);
+    const updateResult = await this.userRepository.update(id, userData);
+    if (updateResult.affected === 0) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
     return this.userRepository.findOne({ where: { id } });
   }
 }

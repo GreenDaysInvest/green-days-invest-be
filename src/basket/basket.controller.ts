@@ -55,4 +55,12 @@ export class BasketController {
     const { itemId, quantity } = updateData;
     return this.basketService.updateItemQuantity(userId, itemId, quantity);
   }
+
+  @Delete(':userId')
+  @UseGuards(JwtAuthGuard)
+  async clearBasket(@Param('userId') userId: string) {
+    console.log('Clearing basket for User ID:', userId);
+    await this.basketService.clearBasket(userId);
+    return { message: 'Basket cleared successfully' };
+  }
 }

@@ -7,13 +7,6 @@ export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @UseGuards(JwtAuthGuard)
-  @Post('create-customer')
-  async createCustomer(@Body('userId') userId: string) {
-    await this.paymentsService.createCustomer(userId);
-    return { message: 'Stripe customer created' };
-  }
-
-  @UseGuards(JwtAuthGuard)
   @Post('create-intent')
   async createPaymentIntent(
     @Body('userId') userId: string,
@@ -26,18 +19,24 @@ export class PaymentsController {
     return { clientSecret: paymentIntent.client_secret };
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Post('paypal/create-order')
-  async createPayPalOrder(
-    @Body('userId') userId: string,
-    @Body('amount') amount: string,
-  ) {
-    return await this.paymentsService.createPayPalOrder(userId, amount);
-  }
+  // @UseGuards(JwtAuthGuard)
+  // @Post('paypal/create-order')
+  // async createPayPalOrder(
+  //   @Body('userId') userId: string,
+  //   @Body('amount') amount: string,
+  // ) {
+  //   return await this.paymentsService.createPayPalOrder(userId, amount);
+  // }
 
-  @UseGuards(JwtAuthGuard)
-  @Post('paypal/capture-order/:orderId')
-  async capturePayPalOrder(@Param('orderId') orderId: string) {
-    return await this.paymentsService.capturePayPalOrder(orderId);
+  // @UseGuards(JwtAuthGuard)
+  // @Post('paypal/capture-order/:orderId')
+  // async capturePayPalOrder(@Param('orderId') orderId: string) {
+  //   return await this.paymentsService.capturePayPalOrder(orderId);
+  // }
+
+  @Post('generate-token')
+  async generatePayPalToken() {
+    const accessToken = await this.paymentsService.generatePayPalToken();
+    return { accessToken };
   }
 }

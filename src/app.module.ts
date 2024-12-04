@@ -11,6 +11,7 @@ import { BasketModule } from './basket/basket.module';
 import { FlowerModule } from './flower/flower.module';
 import { VerificationModule } from './verification/verification.module';
 import { PaymentsModule } from './payments/payments.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { PaymentsModule } from './payments/payments.module';
     FlowerModule,
     VerificationModule,
     PaymentsModule,
+    WebhooksModule,
   ],
 })
 export class AppModule {}

@@ -3,9 +3,10 @@ import { VerificationService } from './verification.service';
 import { VerificationController } from './verification.controller';
 import { AuthModule } from 'src/auth/auth.module';
 import { UserModule } from 'src/user/user.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [AuthModule, UserModule],
+  imports: [AuthModule, UserModule, ConfigModule.forRoot()],
   providers: [VerificationService],
   controllers: [VerificationController],
 })
