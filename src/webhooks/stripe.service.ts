@@ -21,17 +21,17 @@ export class StripeService implements OnModuleInit {
     const secretKey = this.configService.get<string>('stripe.secretKey');
     const identityKey = this.configService.get<string>('stripe.identityKey');
     this.webhookSecret = this.configService.get<string>('stripe.webhookSecret');
-console.log(secretKey,identityKey)
+
     if (!secretKey) {
-      throw new Error('Stripe secret key is not defined in environment variables');
+      throw new Error('Stripe-Geheimnis ist nicht in den Umgebungsvariablen definiert');
     }
 
     if (!identityKey) {
-      throw new Error('Stripe identity key is not defined in environment variables');
+      throw new Error('Stripe-Identitäts-Geheimnis ist nicht in den Umgebungsvariablen definiert');
     }
 
     if (!this.webhookSecret) {
-      console.warn('Stripe webhook secret is not defined in environment variables');
+      console.warn('Stripe-Webhook-Geheimnis ist nicht in den Umgebungsvariablen definiert');
     }
 
     console.log(`Running in ${this.configService.get('nodeEnv')} mode`);
@@ -49,13 +49,23 @@ console.log(secretKey,identityKey)
 
   constructEvent(payload: Buffer, signature: string): Stripe.Event {
     if (!this.webhookSecret) {
-      throw new Error('Webhook secret is not configured');
+      throw new Error('Webhook-Geheimnis ist nicht konfiguriert');
     }
     return this.stripe.webhooks.constructEvent(
       payload,
       signature,
       this.webhookSecret
     );
+  }
+
+  private calculateAge(birthDate: Date): number {
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
   }
 
   async handleEvent(event: Stripe.Event) {
@@ -105,30 +115,38 @@ console.log(secretKey,identityKey)
 
             if (user) {
               // Convert DOB to Date object using the Stripe DOB object
-              const dob = new Date(
+              const stripeDob = new Date(
                 documentDob.year,
                 documentDob.month - 1, // JavaScript months are 0-based
                 documentDob.day
               );
-              const age = this.calculateAge(dob);
 
+              // Compare with existing birthdate
+              if (!user.birthdate || user.birthdate.getTime() !== stripeDob.getTime()) {
+                console.log('Updating user birthdate from Stripe Identity verification');
+                console.log('Old birthdate:', user.birthdate);
+                console.log('New birthdate:', stripeDob);
+                user.birthdate = stripeDob;
+              }
+
+              const age = this.calculateAge(stripeDob);
               console.log('Calculated age:', age);
 
               if (age >= 18) {
                 user.isVerified = true;
                 user.verifiedAt = new Date();
                 await this.userRepository.save(user);
-                console.log('User verified successfully');
+                console.log('Benutzer erfolgreich verifiziert');
               } else {
                 user.isVerified = false;
                 user.verifiedAt = null;
                 await this.userRepository.save(user);
-                console.log('User verification failed: underage');
+                console.log('Benutzerverifizierung fehlgeschlagen: Mindestalter nicht erreicht');
               }
             }
           }
         } else {
-          console.log('No valid DOB found in verification report');
+          console.log('Kein gültiges Geburtsdatum im Verifizierungsbericht gefunden');
           // Set user as unverified if no DOB found
           const userId = session.metadata?.user_id;
           if (userId) {
@@ -139,7 +157,7 @@ console.log(secretKey,identityKey)
           }
         }
       } catch (error) {
-        console.error('Error processing verification report:', error);
+        console.error('Fehler bei der Verarbeitung des Verifizierungsberichts:', error);
         // Set user as unverified on error
         const userId = session.metadata?.user_id;
         if (userId) {
@@ -150,17 +168,5 @@ console.log(secretKey,identityKey)
         }
       }
     }
-  }
-
-  private calculateAge(birthDate: Date): number {
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    
-    return age;
   }
 }

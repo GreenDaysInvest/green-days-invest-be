@@ -27,7 +27,7 @@ export class VerificationService {
   async createVerificationSession(userId: string) {
     const user = await this.userService.findById(userId);
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException('Benutzer nicht gefunden');
     }
 
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');
@@ -60,7 +60,7 @@ export class VerificationService {
   async getVerificationStatus(userId: string) {
     const user = await this.userService.findById(userId);
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException('Benutzer nicht gefunden');
     }
 
     try {
@@ -88,27 +88,27 @@ export class VerificationService {
             // Don't treat this as an error during initial verification
             if (latestSession.last_error) {
               error = latestSession.last_error.code 
-                ? `Verification error: ${latestSession.last_error.code}`
-                : 'Additional information required. Please try again.';
+                ? `Überprüfungsfehler: ${latestSession.last_error.code}`
+                : 'Zusätzliche Informationen erforderlich. Bitte versuchen Sie es erneut.';
             }
             break;
           case 'processing':
-            error = 'Verification is still processing';
+            error = 'Überprüfung läuft noch';
             break;
           case 'verified':
             // If session is verified but user is not, they must be under 18
-            error = 'User must be 18 or older to proceed';
+            error = 'Sie müssen mindestens 18 Jahre alt sein, um fortzufahren';
             break;
           case 'canceled':
-            error = 'Verification was canceled';
+            error = 'Überprüfung wurde abgebrochen';
             break;
           case 'failed':
             error = latestSession.last_error?.code 
-              ? `Verification failed: ${latestSession.last_error.code}`
-              : 'Verification failed';
+              ? `Überprüfung fehlgeschlagen: ${latestSession.last_error.code}`
+              : 'Überprüfung fehlgeschlagen';
             break;
           default:
-            error = 'Verification failed';
+            error = 'Überprüfung fehlgeschlagen';
         }
       }
 
@@ -121,7 +121,7 @@ export class VerificationService {
       console.error('Error fetching verification sessions:', error);
       return {
         isVerified: user.isVerified,
-        error: 'Error checking verification status',
+        error: 'Fehler bei der Überprüfung des Verifizierungsstatus',
       };
     }
   }
