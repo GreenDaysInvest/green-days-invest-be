@@ -67,7 +67,7 @@ export class QuestionnaireService {
   }
 
   async findAll(): Promise<Questionnaire[]> {
-    return this.questionnaireRepository.find({ relations: ['user'] });
+    return this.questionnaireRepository.find({ relations: ['user'], order: { id: 'ASC' } });
   }
 
   async searchByUserDetails(query: string): Promise<Questionnaire[]> {

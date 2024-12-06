@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { WebhookController } from './webhooks.controller';
 import { StripeService } from './stripe.service';
-import { UserModule } from 'src/user/user.module';
-import { AuthModule } from 'src/auth/auth.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
-  imports: [AuthModule, UserModule],
+  imports: [
+    UserModule,
+  ],
   controllers: [WebhookController],
   providers: [StripeService],
 })

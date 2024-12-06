@@ -1,107 +1,166 @@
-import { Injectable } from '@nestjs/common';
-import { UserService } from '../user/user.service';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import Stripe from 'stripe';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../user/user.entity';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
-export class StripeService {
+export class StripeService implements OnModuleInit {
   private stripe: Stripe;
+  private stripeIdentity: Stripe;
+  private webhookSecret: string;
 
-  constructor(private readonly userService: UserService) {
-    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  constructor(
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    private readonly configService: ConfigService,
+  ) {}
+
+  onModuleInit() {
+    const secretKey = this.configService.get<string>('stripe.secretKey');
+    const identityKey = this.configService.get<string>('stripe.identityKey');
+    this.webhookSecret = this.configService.get<string>('stripe.webhookSecret');
+console.log(secretKey,identityKey)
+    if (!secretKey) {
+      throw new Error('Stripe secret key is not defined in environment variables');
+    }
+
+    if (!identityKey) {
+      throw new Error('Stripe identity key is not defined in environment variables');
+    }
+
+    if (!this.webhookSecret) {
+      console.warn('Stripe webhook secret is not defined in environment variables');
+    }
+
+    console.log(`Running in ${this.configService.get('nodeEnv')} mode`);
+
+    // General Stripe instance
+    this.stripe = new Stripe(secretKey, {
+      apiVersion: '2024-11-20.acacia',
+    });
+
+    // Identity-specific Stripe instance with restricted key
+    this.stripeIdentity = new Stripe(identityKey, {
       apiVersion: '2024-11-20.acacia',
     });
   }
 
-  async handleEvent(event: Stripe.Event): Promise<void> {
+  constructEvent(payload: Buffer, signature: string): Stripe.Event {
+    if (!this.webhookSecret) {
+      throw new Error('Webhook secret is not configured');
+    }
+    return this.stripe.webhooks.constructEvent(
+      payload,
+      signature,
+      this.webhookSecret
+    );
+  }
+
+  async handleEvent(event: Stripe.Event) {
     switch (event.type) {
       case 'identity.verification_session.verified':
-      case 'identity.verification_session.requires_input': {
-        const session = event.data.object as Stripe.Identity.VerificationSession;
-        await this.handleVerificationSessionUpdate(session);
+        await this.handleVerificationSessionUpdate(event.data.object as Stripe.Identity.VerificationSession);
         break;
-      }
+      case 'identity.verification_session.created':
+      case 'identity.verification_session.processing':
+      case 'file.created':
+        console.log(`Unhandled event type: ${event.type}`);
+        break;
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
   }
 
-  private async handleVerificationSessionUpdate(
-    session: Stripe.Identity.VerificationSession,
-  ): Promise<void> {
-    const userId = session.metadata?.user_id;
-    if (!userId) {
-      throw new Error('User ID not found in session metadata');
-    }
+  async handleVerificationSessionUpdate(session: Stripe.Identity.VerificationSession) {
+    console.log('Received verification session update:', session);
 
-    const user = await this.userService.findById(userId);
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    switch (session.status) {
-      case 'verified': {
-        try {
-          if (!session.last_verification_report || typeof session.last_verification_report !== 'string') {
-            throw new Error('No valid verification report ID found');
+    if (session.status === 'verified' && session.last_verification_report) {
+      try {
+        // Use stripeIdentity instance for verification report retrieval
+        const report = await this.stripeIdentity.identity.verificationReports.retrieve(
+          session.last_verification_report as string,
+          {
+            expand: ['document.dob']
           }
+        );
 
-          const report = await this.stripe.identity.verificationReports.retrieve(
-            session.last_verification_report
-          );
+        console.log('Full verification report:', JSON.stringify(report, null, 2));
+        console.log('Document data:', report.document);
+        
+        // Extract DOB from the report's sensitive data
+        const documentDob = report.document?.dob;
+        console.log('Document DOB:', documentDob);
 
-          const documentDob = report.document?.dob;
-          if (documentDob) {
-            // Convert the date components to a Date object
-            const stripeDobDate = new Date(
-              documentDob.year,
-              documentDob.month - 1, // JavaScript months are 0-based
-              documentDob.day
-            );
+        if (documentDob && typeof documentDob === 'object') {
+          const userId = session.metadata?.user_id;
+          console.log('User ID:', userId);
 
-            const isValidAge = this.isUserOver18(stripeDobDate, user.birthdate);
-
-            await this.userService.updateUser(user.id, {
-              isVerified: isValidAge,
-              verifiedAt: isValidAge ? new Date() : null,
+          if (userId) {
+            const user = await this.userRepository.findOne({
+              where: { id: userId },
+              relations: ['questionnaires'],
             });
-          } else {
-            console.error('No DOB found in verification report');
-            await this.userService.updateUser(user.id, {
+
+            if (user) {
+              // Convert DOB to Date object using the Stripe DOB object
+              const dob = new Date(
+                documentDob.year,
+                documentDob.month - 1, // JavaScript months are 0-based
+                documentDob.day
+              );
+              const age = this.calculateAge(dob);
+
+              console.log('Calculated age:', age);
+
+              if (age >= 18) {
+                user.isVerified = true;
+                user.verifiedAt = new Date();
+                await this.userRepository.save(user);
+                console.log('User verified successfully');
+              } else {
+                user.isVerified = false;
+                user.verifiedAt = null;
+                await this.userRepository.save(user);
+                console.log('User verification failed: underage');
+              }
+            }
+          }
+        } else {
+          console.log('No valid DOB found in verification report');
+          // Set user as unverified if no DOB found
+          const userId = session.metadata?.user_id;
+          if (userId) {
+            await this.userRepository.update(userId, {
               isVerified: false,
               verifiedAt: null,
             });
           }
-        } catch (error) {
-          console.error('Error processing verification report:', error);
-          throw error;
         }
-        break;
+      } catch (error) {
+        console.error('Error processing verification report:', error);
+        // Set user as unverified on error
+        const userId = session.metadata?.user_id;
+        if (userId) {
+          await this.userRepository.update(userId, {
+            isVerified: false,
+            verifiedAt: null,
+          });
+        }
       }
-      case 'requires_input':
-        await this.userService.updateUser(user.id, {
-          isVerified: false,
-          verifiedAt: null,
-        });
-        break;
-      default:
-        console.log(`Unhandled verification status: ${session.status}`);
     }
   }
 
-  private isUserOver18(stripeDob: Date, userDob: Date): boolean {
-    // Compare the dates
-    if (stripeDob.getTime() !== userDob.getTime()) {
-      return false; // Dates don't match
-    }
-
+  private calculateAge(birthDate: Date): number {
     const today = new Date();
-    const age = today.getFullYear() - stripeDob.getFullYear();
-    const monthDiff = today.getMonth() - stripeDob.getMonth();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
     
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < stripeDob.getDate())) {
-      return age - 1 >= 18;
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
     }
     
-    return age >= 18;
+    return age;
   }
 }
