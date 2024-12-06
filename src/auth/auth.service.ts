@@ -8,7 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { UserService } from '../user/user.service';
 import { User } from '../user/user.entity';
-import admin from '../firebase-admin';
+import { FirebaseAdminService } from '../firebase-admin';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +16,7 @@ export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly userService: UserService,
+    private readonly firebaseAdmin: FirebaseAdminService,
   ) {}
 
   async checkUserExists(email: string): Promise<boolean> {
@@ -98,26 +99,23 @@ export class AuthService {
     throw new UnauthorizedException('Invalid credentials');
   }
 
-  async verifyFirebaseToken(token: string): Promise<User> {
-    const decodedToken = await admin.auth().verifyIdToken(token);
-    let user = await this.userService.findByEmail(decodedToken.email);
-    if (!user) {
-      // Create user if they don't exist
-      user = await this.userService.createUser({
-        uid: decodedToken.uid,
-        email: decodedToken.email,
-        name: decodedToken.name,
-        surname: decodedToken.surname,
-        providerId: 'firebase',
-      });
+  async validateFirebaseToken(token: string) {
+    try {
+      const decodedToken = await this.firebaseAdmin.getAuth().verifyIdToken(token);
+      return decodedToken;
+    } catch (error) {
+      console.error('Error validating Firebase token:', error);
+      return null;
     }
-    return user;
   }
 
   async loginWithFirebase(
     token: string,
   ): Promise<{ token: string; user: Partial<User> }> {
-    const decodedToken = await admin.auth().verifyIdToken(token); // Verify the token
+    const decodedToken = await this.validateFirebaseToken(token);
+    if (!decodedToken) {
+      throw new UnauthorizedException('Invalid Firebase token');
+    }
     const email = decodedToken.email;
 
     // Check if user already exists

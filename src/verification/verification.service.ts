@@ -19,7 +19,7 @@ export class VerificationService {
     private readonly userService: UserService,
     private readonly configService: ConfigService,
   ) {
-    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    this.stripe = new Stripe(this.configService.get<string>('stripe.secretKey'), {
       apiVersion: '2024-11-20.acacia',
     });
   }

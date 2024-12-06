@@ -2,14 +2,18 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import Stripe from 'stripe';
 import axios from 'axios';
 import { UserService } from '../user/user.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class PaymentsService {
   private stripe: Stripe;
 
-  constructor(private readonly userService: UserService) {
+  constructor(
+    private readonly userService: UserService,
+    private readonly configService: ConfigService,
+  ) {
     // Initialize Stripe
-    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    this.stripe = new Stripe(this.configService.get<string>('stripe.secretKey'), {
       apiVersion: '2024-11-20.acacia',
     });
   }
@@ -47,8 +51,8 @@ export class PaymentsService {
   async generatePayPalToken(): Promise<string> {
     const PAYPAL_API_BASE_URL =
       'https://api.sandbox.paypal.com/v1/oauth2/token'; // Change to production URL for production
-    const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
-    const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET;
+    const PAYPAL_CLIENT_ID = this.configService.get<string>('paypal.clientId');
+    const PAYPAL_CLIENT_SECRET = this.configService.get<string>('paypal.clientSecret');
 
     if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
       throw new Error(
