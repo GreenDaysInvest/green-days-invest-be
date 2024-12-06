@@ -52,6 +52,12 @@ export class QuestionnaireService {
         questionnaire.user.email,
         subject,
         text,
+        `<div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2>Benachrichtigung über den Status Ihres Medikaments</h2>
+          <p>${text}</p>
+          <p>Bei Fragen stehen wir Ihnen gerne zur Verfügung.</p>
+          <p>Mit freundlichen Grüßen,<br>Ihr Green Days Team</p>
+        </div>`
       );
     } catch (error) {
       console.error('Failed to send email:', error);
