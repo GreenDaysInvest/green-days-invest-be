@@ -40,11 +40,11 @@ export class QuestionnaireService {
     // Send email to user
     const subject =
       status === 'accepted'
-        ? 'Ihr Medikament wurde abgelehnt'
+        ? 'Ihr Medikament wurde zugelassen'
         : 'Ihr Medikament wurde abgelehnt';
     const text =
       status === 'accepted'
-        ? `Halo ${questionnaire.user.name}, Ihr Medikament wurde abgelehnt.`
+        ? `Halo ${questionnaire.user.name}, Ihr Medikament wurde zugelassen.`
         : `Halo ${questionnaire.user.name}, leider wurde, Ihr Medikament abgelehnt.`;
 
     try {
