@@ -120,9 +120,15 @@ export class StripeService implements OnModuleInit {
                 documentDob.month - 1, // JavaScript months are 0-based
                 documentDob.day
               );
+              console.log(user.birthdate, "user.birthdate");
+              
+              // Convert string birthdate to Date object if it's a string
+              const userBirthdate = user.birthdate ? new Date(user.birthdate) : null;
+              console.log(userBirthdate?.getTime(), "userBirthdate?.getTime()");
+              console.log(stripeDob.getTime(), "stripeDob.getTime()");
 
               // Compare with existing birthdate
-              if (!user.birthdate || user.birthdate.getTime() !== stripeDob.getTime()) {
+              if (!userBirthdate || userBirthdate.getTime() !== stripeDob.getTime()) {
                 console.log('Updating user birthdate from Stripe Identity verification');
                 console.log('Old birthdate:', user.birthdate);
                 console.log('New birthdate:', stripeDob);
