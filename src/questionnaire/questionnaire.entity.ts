@@ -12,7 +12,7 @@ export class Questionnaire {
   user: User;
 
   @Column('json')
-  questions: { question: string; answer: string }[];
+  questions: { question: string; answer: string | string[] }[];
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
