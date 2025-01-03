@@ -41,7 +41,7 @@ export class VerificationService {
       metadata: {
         user_id: userId,
       },
-      // return_url: `${frontendUrl}/dashboard`,
+      return_url: `${frontendUrl}/dashboard`,
       options: {
         document: {
           require_id_number: true,
