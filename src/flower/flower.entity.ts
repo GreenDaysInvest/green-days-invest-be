@@ -1,4 +1,4 @@
-import { BasketItem } from 'src/basket/basket.entity';
+import { BasketItem } from '../basket/basket.entity';
 import { Entity, Column, PrimaryColumn, OneToMany } from 'typeorm';
 
 @Entity('flowers')

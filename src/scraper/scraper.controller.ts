@@ -22,8 +22,8 @@ export class ScraperController {
     const mockData = [
       {
         Name: 'Test Product',
-        Image: 'https://example.com/image.jpg',
-        Link: 'https://example.com/product',
+        Image: '',
+        Link: '',
         Genetic: 'Hybrid',
         THC: '20%',
         CBD: '1%',

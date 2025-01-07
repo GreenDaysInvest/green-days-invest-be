@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { Questionnaire } from 'src/questionnaire/questionnaire.entity';
-import { BasketItem } from 'src/basket/basket.entity';
+import { Questionnaire } from '../questionnaire/questionnaire.entity';
+import { BasketItem } from '../basket/basket.entity';
 
 @Entity('users')
 export class User {

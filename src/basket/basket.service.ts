@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Flower } from 'src/flower/flower.entity';
-import { User } from 'src/user/user.entity';
+import { Flower } from '../flower/flower.entity';
+import { User } from '../user/user.entity';
 import { Repository } from 'typeorm';
 import { BasketItem } from './basket.entity';
 

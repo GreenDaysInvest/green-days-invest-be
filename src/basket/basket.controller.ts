@@ -9,9 +9,9 @@ import {
   Patch,
 } from '@nestjs/common';
 import { BasketService } from './basket.service';
-import { Flower } from 'src/flower/flower.entity';
+import { Flower } from '../flower/flower.entity';
 import { User as UserDecorator } from '../user/user.decorator';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('basket')
 export class BasketController {
