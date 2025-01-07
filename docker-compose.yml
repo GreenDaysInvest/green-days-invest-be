@@ -1,33 +1,28 @@
 version: '3.8'
 services:
   app:
-    build:
-      context: .
-      args:
-        NODE_ENV: production
+    build: .
     ports:
       - '3001:3000'
-    volumes:
-      - .:/app
-      - /app/node_modules
+    # volumes:
+    #   - .:/app
+    #   - /app/node_modules
     depends_on:
       - db
     environment:
-      NODE_ENV: production
       DATABASE_HOST: db
       DATABASE_PORT: 5432
       DATABASE_USERNAME: nest_user
       DATABASE_PASSWORD: nest_pass
       DATABASE_NAME: green_days
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
-      STRIPE_IDENTITY_KEY: ${STRIPE_IDENTITY_KEY}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
-      JWT_SECRET: ${JWT_SECRET}
-      FRONTEND_URL: ${FRONTEND_URL}
-      EMAIL_USER: ${EMAIL_USER}
-      EMAIL_APP_PASSWORD: ${EMAIL_APP_PASSWORD}
-    command: npm run start:prod
+      # STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      # STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+      # STRIPE_IDENTITY_KEY: ${STRIPE_IDENTITY_KEY}
+      # STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      # JWT_SECRET: ${JWT_SECRET}
+      # FRONTEND_URL: ${FRONTEND_URL}
+      # EMAIL_USER: ${EMAIL_USER}
+      # EMAIL_APP_PASSWORD: ${EMAIL_APP_PASSWORD}
 
   db:
     image: postgres:13
