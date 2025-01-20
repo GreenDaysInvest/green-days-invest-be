@@ -1,129 +1,134 @@
 import requests
 from bs4 import BeautifulSoup
+from urllib.parse import urljoin
 import json
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import time
 
-# Funktion zum Abrufen der Webseite mit angepasstem User-Agent
-def get_webpage(url):
+def get_product_links(url):
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " \
+                      "AppleWebKit/537.36 (KHTML, like Gecko) " \
+                      "Chrome/112.0.0.0 Safari/537.36"
     }
     try:
         response = requests.get(url, headers=headers)
         response.raise_for_status()
-        return response.text
-    except requests.RequestException as e:
-        print(f"Fehler beim Abrufen der Seite: {e}")
+    except requests.exceptions.RequestException:
+        return set()
+
+    soup = BeautifulSoup(response.text, 'html.parser')
+    links = set()
+
+    for a_tag in soup.find_all('a', class_='full-unstyled-link', href=True):
+        href = a_tag['href']
+        if href.startswith('/products/'):
+            absolute_url = urljoin(url, href)
+            links.add(absolute_url)
+
+    return links
+
+def get_all_product_links(base_url):
+    all_links = set()
+    page = 1
+
+    while True:
+        paged_url = f"{base_url}&page={page}"
+        links = get_product_links(paged_url)
+        
+        if not links:
+            break
+        
+        previous_count = len(all_links)
+        all_links.update(links)
+        
+        # Beende die Schleife, wenn keine neuen Links hinzugefügt wurden
+        if len(all_links) == previous_count:
+            break
+
+        page += 1
+
+    return all_links
+
+def extract_product_info(url):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " \
+                      "AppleWebKit/537.36 (KHTML, like Gecko) " \
+                      "Chrome/112.0.0.0 Safari/537.36"
+    }
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+    except requests.exceptions.RequestException:
         return None
 
-# Funktion zum Abrufen des Preises von der Produktseite mit Retry-Logik
-def get_product_price(product_url, session, retries=3):
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Referer': 'https://gruenebluete.de/',
-        'Accept-Language': 'de-DE,de;q=0.9',
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    # Extrahiere den Namen
+    name_tag = soup.find('h1', class_='product__title')
+    name = name_tag.get_text(strip=True) if name_tag else 'N/A'
+
+    # Extrahiere das Bild
+    image_div = soup.find('div', class_='product__media media media--transparent')
+    image = 'N/A'
+    if image_div:
+        img_tag = image_div.find('img')
+        if img_tag and img_tag.get('src'):
+            src = img_tag['src']
+            if src.startswith('//'):
+                image = 'https:' + src
+            elif src.startswith('/'):
+                image = urljoin(url, src)
+            else:
+                image = src
+
+    # Extrahiere Genetik, THC, CBD
+    genetic = 'N/A'
+    thc = 'N/A'
+    cbd = 'N/A'
+
+    description_divs = soup.find_all('div', class_='product__description')
+    for div in description_divs:
+        p_tags = div.find_all('p')
+        for p in p_tags:
+            strong = p.find('strong')
+            if strong:
+                label = strong.get_text(strip=True).lower()
+                if 'genetik' in label:
+                    genetic = p.get_text(separator=' ', strip=True).replace('Genetik:', '').strip()
+                elif 'thc' in label:
+                    thc = p.get_text(strip=True).replace('THC:', '').strip()
+                elif 'cbd' in label:
+                    cbd = p.get_text(strip=True).replace('CBD:', '').strip()
+
+    # Setze die Verfügbarkeit auf 'Available'
+    availability = 'Available'
+
+    return {
+        'Farmacy': 'Gruenebluete.de',
+        'Name': name,
+        'Image': image,
+        'Genetic': genetic,
+        'THC': thc,
+        'CBD': cbd,
+        'Availability': availability,
+        'Link': url  # Link hinzugefügt
     }
-    for attempt in range(retries):
-        try:
-            response = session.get(product_url, headers=headers)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.text, 'html.parser')
-            
-            # Preis finden
-            price_element = soup.select_one("div.ct-text-block.product-info-text:-soup-contains('Preis')")
-            if price_element:
-                price = price_element.get_text(strip=True).replace('Preis:', '').strip()
-            else:
-                alternative_price_element = soup.find('span', string=lambda text: text and '€' in text)
-                price = alternative_price_element.get_text(strip=True) if alternative_price_element else "Preis nicht gefunden"
-            return price
-        except requests.RequestException as e:
-            print(f"Fehler beim Abrufen des Preises (Versuch {attempt+1}): {e}")
-            time.sleep(2 ** attempt)  # Exponential backoff
-    return "Fehler beim Abrufen des Preises"
 
-# Funktion zur Verarbeitung der Hauptseite und Extraktion der Produkte in Batches
-def parse_page(html_content, session, batch_size=10):
-    soup = BeautifulSoup(html_content, 'html.parser')
-    products = soup.find_all('a', class_='product-card')
-    
-    strains = []
-    for i in range(0, len(products), batch_size):
-        batch = products[i:i + batch_size]
-        with ThreadPoolExecutor(max_workers=10) as executor:  # Increased max_workers for faster processing
-            futures = {}
-            for product in batch:
-                # Name der Sorte
-                name_element = product.find('h4', class_='ct-headline article-card-title mt-3 mx-3 product-card-title')
-                name = name_element.get_text(strip=True) if name_element else "Unbekannt"
-                
-                # Bild-URL
-                image_element = product.find('img', class_='ct-image article-card-image webpexpress-processed')
-                image = image_element['src'] if image_element else "Unbekannt"
-                
-                # Produktlink
-                link = product['href'] if product.has_attr('href') else "Unbekannt"
-                
-                # Genetik der Sorte
-                genetics_element = product.find('div', class_='ct-text-block product-card-genetik mx-3 mt-2')
-                genetics = genetics_element.get_text(strip=True) if genetics_element else "Keine Angabe"
-                
-                # THC-Gehalt
-                thc_element = product.find('div', class_='ct-div-block mx-3 align-items-center product-label-container')
-                thc_value = 'N/A'
-                if thc_element:
-                    thc_span = thc_element.find('span', class_='ct-span')
-                    thc_value = thc_span.get_text(strip=True) if thc_span else 'N/A'
-                
-                # CBD-Gehalt
-                cbd_value = 'N/A'
-                if thc_element:
-                    cbd_spans = thc_element.find_all('span', class_='ct-span')
-                    if len(cbd_spans) > 1:
-                        cbd_value = cbd_spans[1].get_text(strip=True)
-                
-                # Verfügbarkeit
-                availability_element = product.find('div', class_='availability-text')
-                availability = availability_element.get_text(strip=True) if availability_element else "Nicht angegeben"
-                
-                # Parallel Anfrage zum Preis abrufen
-                if link != "Unbekannt":
-                    futures[executor.submit(get_product_price, link, session)] = {
-                        'Name': name,
-                        'Image': image,
-                        'Link': link,
-                        'Genetic': genetics,
-                        'THC': thc_value,
-                        'CBD': cbd_value,
-                        'Availability': availability
-                    }
-            
-            for future in as_completed(futures):
-                strain_info = futures[future]
-                strain_info['Price'] = future.result()
-                strains.append(strain_info)
-        
-        time.sleep(0.5)  # Delay between batches to prevent overloading server
-    
-    return strains
-
-# Hauptfunktion für den Scraping-Prozess
 def main():
-    url = 'https://gruenebluete.de/cannabis-sorten/cannabisblueten/'
-    html_content = get_webpage(url)
-    
-    if html_content:
-        with requests.Session() as session:
-            strains = parse_page(html_content, session)
-            if strains:
-                # Return as JSON string
-                return json.dumps(strains, ensure_ascii=False, indent=4)
-            else:
-                return json.dumps({"error": "Keine Sorten gefunden."}, ensure_ascii=False, indent=4)
-    else:
-        return json.dumps({"error": "Die Webseite konnte nicht abgerufen werden."}, ensure_ascii=False, indent=4)
+    base_url = 'https://gruenebluete.de/collections/cannabisblueten?filter.p.product_type=Bl%C3%BCten'
+    product_links = get_all_product_links(base_url)
+    products = []
 
-# Aufruf der Hauptfunktion und Ausgabe im JSON-Format
-json_result = main()
-print(json_result)
+    for link in sorted(product_links):
+        info = extract_product_info(link)
+        if info:
+            products.append(info)
+
+    # Ausgabe als Liste
+    print(products)
+
+    # Optional: Speichern der Liste als JSON-Datei
+    with open('produkte.json', 'w', encoding='utf-8') as f:
+        json.dump(products, f, ensure_ascii=False, indent=4)
+
+if __name__ == "__main__":
+        main()
