@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Put, UseGuards, Get } from '@nestjs/common';
+import { Controller, Post, Body, Put, UseGuards, Get, Delete } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { User } from '../user/user.entity'; // Ensure this import is correct
@@ -72,5 +72,13 @@ export class AuthController {
   @Post('login/firebase')
   async loginWithFirebase(@Body('token') token: string) {
     return this.authService.loginWithFirebase(token); // Pass the token to the service
+  }
+
+
+  @Delete('delete-account')
+  @UseGuards(JwtAuthGuard)
+  async deleteAccount(@UserDecorator('userId') user: { userId: string }) {
+    await this.authService.deleteUser(user.userId);
+    return { message: 'Account successfully deleted' };
   }
 }

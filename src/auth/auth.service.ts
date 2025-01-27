@@ -2,6 +2,7 @@
 import {
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -179,4 +180,79 @@ export class AuthService {
     // You can add additional checks or transformations here if needed
     return this.userService.updateUser(id, userData); // Call UserService to handle the update
   }
+
+  async deleteUser(id: string): Promise<void> {
+    const user = await this.userService.findById(id);
+  
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+  
+    // Delete the user from the database
+    const deleteFromDatabase = async () => {
+      await this.userService.deleteUser(id);
+      console.log(`User ${id} successfully deleted from the database.`);
+    };
+  
+    // If the user has a Firebase UID and no password, attempt to delete from Firebase
+    if (user.uid && !user.password) {
+      try {
+        // Get a new instance of auth
+        const auth = this.firebaseAdmin.getAuth();
+  
+        if (!auth) {
+          console.warn(
+            'Firebase Admin not initialized. Proceeding with database deletion only.'
+          );
+          await deleteFromDatabase();
+          return;
+        }
+
+        try {
+          // First verify if the user exists in Firebase
+          await auth.getUser(user.uid)
+            .then(async () => {
+              // User exists in Firebase, proceed with deletion
+              await auth.deleteUser(user.uid);
+              console.log(`User ${user.uid} successfully deleted from Firebase.`);
+              await deleteFromDatabase();
+            })
+            .catch(async (error) => {
+              if (error.code === 'auth/user-not-found') {
+                console.warn(
+                  `User ${user.uid} not found in Firebase. Proceeding with database deletion.`
+                );
+                await deleteFromDatabase();
+              } else {
+                throw error;
+              }
+            });
+        } catch (firebaseError) {
+          if (firebaseError.code === 'auth/invalid-credential' ||
+              firebaseError.message?.includes('failed to fetch a valid Google OAuth2 access token')) {
+            console.error('Firebase credentials error:', firebaseError.message);
+            console.warn(
+              'Proceeding with database deletion despite Firebase authentication error.'
+            );
+            await deleteFromDatabase();
+          } else {
+            // Re-throw other Firebase errors
+            console.error(
+              `Failed to delete user ${user.uid} from Firebase:`,
+              firebaseError
+            );
+            throw firebaseError;
+          }
+        }
+      } catch (error) {
+        console.error('Firebase service error:', error.message);
+        // If there's any error with Firebase, still proceed with database deletion
+        await deleteFromDatabase();
+      }
+    } else {
+      // For users created through normal registration, just delete from our database
+      await deleteFromDatabase();
+    }
+  }
+  
 }

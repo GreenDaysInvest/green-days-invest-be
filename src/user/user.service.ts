@@ -4,14 +4,18 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import * as bcrypt from 'bcryptjs';
-import { FirebaseAdminService } from '../firebase-admin';
+import { Questionnaire } from '../questionnaire/questionnaire.entity';
+import { BasketItem } from '../basket/basket.entity';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly firebaseAdminService: FirebaseAdminService,
+    @InjectRepository(Questionnaire)
+    private readonly questionnaireRepository: Repository<Questionnaire>,
+    @InjectRepository(BasketItem)
+    private readonly basketItemRepository: Repository<BasketItem>,
   ) {}
 
   async createUser(userData: Partial<User>): Promise<User> {
@@ -44,26 +48,39 @@ export class UserService {
 
     return this.userRepository.findOne({ where: { id } });
   }
+
+  //create delete user
   async deleteUser(id: string): Promise<void> {
     const user = await this.findById(id);
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    try {
-      // Delete from Firebase first
-      const auth = this.firebaseAdminService.getAuth();
-      await auth.deleteUser(user.uid);
+    // Start a transaction to ensure all deletions succeed or none do
+    await this.userRepository.manager.transaction(async transactionalEntityManager => {
+      // Delete related questionnaires
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .delete()
+        .from(Questionnaire)
+        .where("userId = :userId", { userId: id })
+        .execute();
 
-      // Then delete from our database
-      await this.userRepository.remove(user);
-    } catch (error) {
-      if (error.code === 'auth/user-not-found') {
-        // If user doesn't exist in Firebase, just delete from our database
-        await this.userRepository.remove(user);
-      } else {
-        throw error;
-      }
-    }
+      // Delete related basket items
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .delete()
+        .from(BasketItem)
+        .where("userId = :userId", { userId: id })
+        .execute();
+
+      // Finally, delete the user
+      await transactionalEntityManager
+        .createQueryBuilder()
+        .delete()
+        .from(User)
+        .where("id = :id", { id })
+        .execute();
+    });
   }
 }
