@@ -4,12 +4,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import * as bcrypt from 'bcryptjs';
+import { FirebaseAdminService } from '../firebase-admin';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly firebaseAdminService: FirebaseAdminService,
   ) {}
 
   async createUser(userData: Partial<User>): Promise<User> {
@@ -41,5 +43,27 @@ export class UserService {
     }
 
     return this.userRepository.findOne({ where: { id } });
+  }
+  async deleteUser(id: string): Promise<void> {
+    const user = await this.findById(id);
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    try {
+      // Delete from Firebase first
+      const auth = this.firebaseAdminService.getAuth();
+      await auth.deleteUser(user.uid);
+
+      // Then delete from our database
+      await this.userRepository.remove(user);
+    } catch (error) {
+      if (error.code === 'auth/user-not-found') {
+        // If user doesn't exist in Firebase, just delete from our database
+        await this.userRepository.remove(user);
+      } else {
+        throw error;
+      }
+    }
   }
 }
