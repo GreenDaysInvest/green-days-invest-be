@@ -6,10 +6,12 @@ import { JwtModule } from '@nestjs/jwt';
 import { UserModule } from '../user/user.module';
 import { FirebaseAdminService } from '../firebase-admin';
 import { ConfigService } from '@nestjs/config';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
     UserModule,
+    EmailModule,
     JwtModule.registerAsync({
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('jwt.secret') || 'defaultSecret',

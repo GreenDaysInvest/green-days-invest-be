@@ -10,6 +10,7 @@ import * as bcrypt from 'bcryptjs';
 import { UserService } from '../user/user.service';
 import { User } from '../user/user.entity';
 import { FirebaseAdminService } from '../firebase-admin';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +19,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly userService: UserService,
     private readonly firebaseAdmin: FirebaseAdminService,
+    private readonly emailService: EmailService,
   ) {}
 
   async checkUserExists(email: string): Promise<boolean> {
@@ -54,6 +56,31 @@ export class AuthService {
     });
 
     const token = this.jwtService.sign({ userId: user.id });
+
+    // Send welcome email
+    try {
+      await this.emailService.sendEmail(
+        email,
+        'Willkommen bei Cannabiz Reprezente 24',
+        `Hallo ${name},\n\nWillkommen bei Cannabiz Reprezente 24! Wir freuen uns, Sie an Bord zu haben.`,
+        `<div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2>Willkommen bei Cannabiz Reprezente 24!</h2>
+          <p>Hallo ${name},</p>
+          <p>Wir freuen uns sehr, Sie bei Cannabiz Reprezente 24 begrüßen zu dürfen!</p>
+          <p>Mit Ihrem neuen Konto können Sie:</p>
+          <ul>
+            <li>Ihre Medikamente zur Überprüfung einreichen</li>
+            <li>Den Status Ihrer Einreichungen verfolgen</li>
+            <li>Mit unserem Team kommunizieren</li>
+          </ul>
+          <p>Bei Fragen stehen wir Ihnen gerne zur Verfügung.</p>
+          <p>Mit freundlichen Grüßen,<br>Ihr Green Days Team</p>
+        </div>`
+      );
+    } catch (error) {
+      console.error('Failed to send welcome email:', error);
+      // Don't throw the error as registration was successful
+    }
 
     // Return only non-sensitive user data and the token
     return {
