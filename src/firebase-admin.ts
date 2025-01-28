@@ -26,6 +26,7 @@ export class FirebaseAdminService {
         if (!admin.apps.length) {
           this.firebaseApp = admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),
+            databaseURL: `https://${serviceAccount.project_id}.firebaseio.com`,
           });
           console.log('Firebase Admin initialized successfully.');
         } else {
