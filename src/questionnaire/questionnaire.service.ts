@@ -52,12 +52,49 @@ export class QuestionnaireService {
         questionnaire.user.email,
         subject,
         text,
-        `<div style="font-family: Arial, sans-serif; padding: 20px;">
-          <h2>Benachrichtigung über den Status Ihres Medikaments</h2>
-          <p>${text}</p>
-          <p>Bei Fragen stehen wir Ihnen gerne zur Verfügung.</p>
-          <p>Mit freundlichen Grüßen,<br>Ihr Green Days Team</p>
-        </div>`
+        `
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9f9f9; padding: 20px 0;">
+            <tr>
+              <td align="center">
+                <table
+                  width="600"
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);"
+                >
+                  <!-- Logo Section -->
+                  <tr>
+                    <td align="center" style="background-color: #f3f3f3; padding: 20px;">
+                      <img
+                        src="https://www.cannabisrezepte24.de/logo.svg"
+                        alt="Cannabiz Reprezente 24 Logo"
+                        style="max-height: 50px;"
+                      />
+                    </td>
+                  </tr>
+                  <!-- Content Section -->
+                  <tr>
+                    <td style="padding: 20px; font-family: Arial, sans-serif;">
+                      <h2 style="color: #333333; font-size: 24px; margin-bottom: 20px;">
+                        Benachrichtigung über den Status Ihres Medikaments
+                      </h2>
+                      <p style="color: #555555; line-height: 1.6; margin-bottom: 15px;">
+                        ${text}
+                      </p>
+                      <p style="color: #555555; line-height: 1.6; margin-bottom: 15px;">
+                        Bei Fragen stehen wir Ihnen gerne zur Verfügung.
+                      </p>
+                      <p style="color: #555555; line-height: 1.6;">
+                        Mit freundlichen Grüßen,<br />
+                        Ihr Cannabiz Reprezente 24 Team
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        `
       );
     } catch (error) {
       console.error('Failed to send email:', error);
