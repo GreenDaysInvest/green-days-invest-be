@@ -41,25 +41,7 @@ async function bootstrap() {
 
   console.log('Configuring CORS with origins:', allowedOrigins);
   
-  app.enableCors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) {
-        callback(null, true);
-        return;
-      }
-
-      if (allowedOrigins.some(allowedOrigin => origin.startsWith(allowedOrigin))) {
-        callback(null, true);
-      } else {
-        console.warn(`Blocked request from unauthorized origin: ${origin}`);
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
-  });
+  app.enableCors();
   
   // Parse raw body for webhook endpoint with verify function
   app.use(
