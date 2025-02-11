@@ -79,9 +79,6 @@ export class AuthService {
                       <img
                         src="https://www.cannabisrezepte24.de/logo.png"
                         alt="Cannabiz Reprezente 24 Logo"
-                        style="max-height: 50px;"
-                        width="150"
-                        height="50"
                       />
                     </td>
                   </tr>
