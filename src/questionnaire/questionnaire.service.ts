@@ -68,6 +68,7 @@ export class QuestionnaireService {
                       <img
                         src="https://www.cannabisrezepte24.de/logo.png"
                         alt="Cannabiz Reprezente 24 Logo"
+                        width="200"
                       />
                     </td>
                   </tr>
